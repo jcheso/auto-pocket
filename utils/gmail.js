@@ -102,9 +102,22 @@ async function getEmail(auth, messageId) {
   return res.data;
 }
 
+async function markEmailAsRead(auth, messageId) {
+  const gmail = google.gmail({ version: 'v1', auth });
+  const res = await gmail.users.messages.modify({
+    userId: 'me',
+    id: messageId,
+    resource: {
+      removeLabelIds: ['UNREAD'],
+    },
+  });
+  return res.data;
+}
+
 module.exports = {
   authorize,
   getLabels,
   getUnreadEmails,
   getEmail,
+  markEmailAsRead,
 };
