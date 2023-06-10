@@ -34,7 +34,6 @@ async function getAccessToken() {
   try {
     const token = await fs.readFile(POCKET_TOKEN_PATH);
     const tokenJson = JSON.parse(token);
-    console.log(tokenJson);
     const accessToken = await fetch('https://getpocket.com/v3/oauth/authorize', {
       method: 'POST',
       headers: {
@@ -54,21 +53,29 @@ async function getAccessToken() {
 }
 
 async function addUrlToPocket(url) {
+  console.log(`Adding ${url} to Pocket`);
+  url = encodeURIComponent(url);
   try {
     const pocketAccessToken = await getAccessToken();
-    const pocketUrl = await fetch('https://getpocket.com/v3/add', {
+    console.log(pocketAccessToken);
+    const response = await fetch('https://getpocket.com/v3/add', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json; charset=UTF-8',
         'X-Accept': 'application/json',
       },
       body: JSON.stringify({
+        time: Date.now(),
         consumer_key: process.env.POCKET_CONSUMER_KEY,
         access_token: pocketAccessToken,
         url,
       }),
     });
-    return pocketUrl;
+    // log the status and x-error-code
+    console.log(response.status);
+    console.log(response.headers.get('x-error-code'));
+    const responseJson = await response.json();
+    return responseJson;
   } catch (err) {
     console.error(err);
   }
