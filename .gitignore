@@ -2,4 +2,5 @@
 credentials.json
 token.json
 .env
-pocket_token.json
+pocket_access_token.json
+pocket_request_token.json

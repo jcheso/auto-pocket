@@ -5,8 +5,8 @@ const path = require('path');
 const fs = require('fs');
 const process = require('process');
 
-const { authorize: authGmail, getUnreadEmails, getLabels, getEmail, markEmailAsRead } = require('./utils/gmail');
-const { auth: authPocket, addUrlToPocket } = require('./utils/pocket');
+const { authorize: authGmail, getUnreadEmails, getLabels, getEmail, markEmailAsRead } = require('./services/gmail');
+const { getRequestToken, addUrlToPocket, getAccessToken } = require('./services/pocket');
 
 fastify.get('/update-newsletters', async (request, reply) => {
   const auth = await authGmail();
@@ -29,20 +29,33 @@ fastify.get('/update-newsletters', async (request, reply) => {
     return newsletterUrl;
   });
   const urls = await Promise.all(newsLettersUrls);
-  const url = urls[0];
-  const result = await addUrlToPocket(url);
-  // const results = [];
-  // urls.forEach(async (url) => {
-  //   const result = await addUrlToPocket(url);
-  // if result is success, mark email as read
-  //   await new Promise((resolve) => setTimeout(resolve, 1000));
-  //   results.push(result);
-  // });
+  const results = [];
+  urls.forEach(async (url) => {
+    const result = await addUrlToPocket(url);
+    if (result.status === 1) {
+      await markEmailAsRead(auth, newsletter.id);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    results.push(result);
+  });
   return result;
 });
 
-fastify.get('/pocket-auth', async (request, reply) => {
-  const res = await authPocket();
+// Endpoint to check token is valid for pocket
+fastify.get('/test-pocket', async (request, reply) => {
+  const url =
+    'https://techcrunch.com/2023/06/09/techcrunch-roundup-okr-basics-betting-on-apple-vision-pro-why-smooth-onboarding-is-bad/';
+  const result = await addUrlToPocket(url);
+  return result;
+});
+
+fastify.get('/pocket-auth-request', async (request, reply) => {
+  const res = await getRequestToken();
+  return res;
+});
+
+fastify.get('/pocket-auth-access', async (request, reply) => {
+  const res = await getAccessToken();
   return res;
 });
 
@@ -56,16 +69,8 @@ fastify.get('/gmail-auth', async (request, reply) => {
 });
 
 const start = async () => {
-  const POCKET_TOKEN_PATH = path.join(process.cwd(), 'pocket_token.json');
-  const GOOGLE_TOKEN_PATH = path.join(process.cwd(), 'token.json');
   try {
     dotenv.config();
-    if (!fs.existsSync(GOOGLE_TOKEN_PATH)) {
-      await authGmail();
-    }
-    if (!fs.existsSync(POCKET_TOKEN_PATH)) {
-      await authPocket();
-    }
     await fastify.listen({ port: 3000 });
   } catch (err) {
     fastify.log.error(err);
