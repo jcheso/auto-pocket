@@ -77,15 +77,12 @@ async function readAccessToken() {
   }
 }
 
-async function addUrlToPocket(url) {
+async function addUrlToPocket(url, pocketAccessToken) {
   console.log(`Adding ${url} to Pocket`);
   try {
-    const pocketAccessToken = await readAccessToken();
     if (!pocketAccessToken) {
       throw new Error('No Pocket Access Token found');
     }
-    console.log('Pocket Access Token: ', pocketAccessToken);
-    console.log('Consumer Key:', process.env.POCKET_CONSUMER_KEY);
     const requestConfig = {
       method: 'POST',
       headers: {
@@ -98,7 +95,6 @@ async function addUrlToPocket(url) {
         url,
       }),
     };
-    console.log('Request Config: ', requestConfig);
     const response = await fetch('https://getpocket.com/v3/add', requestConfig);
     if (response.status !== 200) {
       console.log('Add URL Status: ', response.status);
@@ -107,7 +103,7 @@ async function addUrlToPocket(url) {
       throw new Error('Add URL failed');
     }
     const responseJson = await response.json();
-    return responseJson;
+    return { Code: '200', Message: `URL added to Pocket: ${responseJson.item.title}` };
   } catch (err) {
     console.error(err);
   }

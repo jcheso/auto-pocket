@@ -6,7 +6,7 @@ const fs = require('fs');
 const process = require('process');
 
 const { authorize: authGmail, getUnreadEmails, getLabels, getEmail, markEmailAsRead } = require('./services/gmail');
-const { getRequestToken, addUrlToPocket, getAccessToken } = require('./services/pocket');
+const { getRequestToken, addUrlToPocket, getAccessToken, readAccessToken } = require('./services/pocket');
 
 fastify.get('/update-newsletters', async (request, reply) => {
   const auth = await authGmail();
@@ -19,34 +19,28 @@ fastify.get('/update-newsletters', async (request, reply) => {
   if (!unreadNewsletters) {
     return { Code: 200, Message: 'No unread newsletters' };
   }
-  const newsLettersUrls = unreadNewsletters.map(async (newsletter) => {
+  const newslettersUrls = unreadNewsletters.map(async (newsletter) => {
     const email = await getEmail(auth, newsletter.id);
     const listPostHeader = email.payload.headers.find((header) => header.name === 'List-Post');
     if (!listPostHeader) {
       return null;
     }
-    const newsletterUrl = listPostHeader.value.replace('<', '').replace('>', '');
-    return newsletterUrl;
+    const url = listPostHeader.value.replace('<', '').replace('>', '');
+    return { url, id: newsletter.id };
   });
-  const urls = await Promise.all(newsLettersUrls);
+  let newsletters = await Promise.all(newslettersUrls);
+  newsletters = newsletters.filter((newsletters) => newsletters);
   const results = [];
-  urls.forEach(async (url) => {
-    const result = await addUrlToPocket(url);
-    if (result.status === 1) {
+  const pocketAccessToken = await readAccessToken();
+  newsletters.forEach(async (newsletter) => {
+    const result = await addUrlToPocket(newsletter.url, pocketAccessToken);
+    if (result.Code === '200') {
       await markEmailAsRead(auth, newsletter.id);
     }
     await new Promise((resolve) => setTimeout(resolve, 1000));
     results.push(result);
   });
-  return result;
-});
-
-// Endpoint to check token is valid for pocket
-fastify.get('/test-pocket', async (request, reply) => {
-  const url =
-    'https://techcrunch.com/2023/06/09/techcrunch-roundup-okr-basics-betting-on-apple-vision-pro-why-smooth-onboarding-is-bad/';
-  const result = await addUrlToPocket(url);
-  return result;
+  return results;
 });
 
 fastify.get('/pocket-auth-request', async (request, reply) => {
