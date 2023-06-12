@@ -69,7 +69,7 @@ fastify.get('/healthz', async (request, reply) => {
 const start = async () => {
   try {
     dotenv.config();
-    await fastify.listen({ port: 3000 });
+    await fastify.listen({ port: 10000 });
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
