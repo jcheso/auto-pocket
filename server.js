@@ -62,6 +62,10 @@ fastify.get('/gmail-auth', async (request, reply) => {
   return res;
 });
 
+fastify.get('/healthz', async (request, reply) => {
+  return { Code: 200, Message: 'OK' };
+});
+
 const start = async () => {
   try {
     dotenv.config();
