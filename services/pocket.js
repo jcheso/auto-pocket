@@ -1,6 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const process = require('process');
+const fetch = require('node-fetch');
 
 const POCKET_REQUEST_TOKEN_PATH = path.join(process.cwd(), 'pocket_request_token.json');
 const POCKET_ACCESS_TOKEN_PATH = path.join(process.cwd(), 'pocket_access_token.json');
