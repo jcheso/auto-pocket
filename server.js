@@ -1,8 +1,6 @@
 // Require the framework and instantiate it
 const fastify = require('fastify')({ logger: true });
 const dotenv = require('dotenv');
-const path = require('path');
-const fs = require('fs');
 const process = require('process');
 
 const { authorize: authGmail, getUnreadEmails, getLabels, getEmail, markEmailAsRead } = require('./services/gmail');
@@ -67,12 +65,13 @@ fastify.get('/healthz', async (request, reply) => {
 });
 
 const start = async () => {
-  try {
-    dotenv.config();
-    await fastify.listen({ port: 10000 });
-  } catch (err) {
-    fastify.log.error(err);
-    process.exit(1);
-  }
+  dotenv.config();
+  fastify.listen({ port: 10000, host: '0.0.0.0' }, function (err, address) {
+    if (err) {
+      fastify.log.error(err);
+      process.exit(1);
+    }
+    fastify.log.info(`server listening on ${address}`);
+  });
 };
 start();
