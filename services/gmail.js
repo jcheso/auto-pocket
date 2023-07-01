@@ -93,6 +93,13 @@ async function getUnreadEmails(auth, label) {
   return res.data.messages;
 }
 
+async function getEmailBody(emailId) {
+  const auth = await authorize();
+  const email = await getEmail(auth, emailId);
+  const body = email.payload.parts[0].body.data;
+  return Buffer.from(body, 'base64').toString('utf-8');
+}
+
 async function getEmail(auth, messageId) {
   const gmail = google.gmail({ version: 'v1', auth });
   const res = await gmail.users.messages.get({
@@ -120,4 +127,5 @@ module.exports = {
   getUnreadEmails,
   getEmail,
   markEmailAsRead,
+  getEmailBody,
 };

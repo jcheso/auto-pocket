@@ -3,8 +3,41 @@ const fastify = require('fastify')({ logger: true });
 const dotenv = require('dotenv');
 const process = require('process');
 
-const { authorize: authGmail, getUnreadEmails, getLabels, getEmail, markEmailAsRead } = require('./services/gmail');
+const {
+  authorize: authGmail,
+  getUnreadEmails,
+  getLabels,
+  getEmail,
+  markEmailAsRead,
+  getEmailBody,
+} = require('./services/gmail');
 const { getRequestToken, addUrlToPocket, getAccessToken, readAccessToken } = require('./services/pocket');
+
+const getUrlsFromBody = (body) => {
+  // the body is a block of text, we need to find the url that occurs after one of the keywords
+  let urls = [];
+  // extract all of the URLs
+  let urlRegex = /(https?:\/\/[^\s]+)/g;
+  let match;
+  while ((match = urlRegex.exec(body)) !== null) {
+    urls.push(match[1]);
+  }
+  // remove and urls that contain unsubscribe or signup
+  urls = urls.filter(
+    (url) =>
+      !url.includes('unsubscribe') &&
+      !url.includes('signup') &&
+      !url.includes('form') &&
+      !url.includes('email') &&
+      !url.includes('twitter') &&
+      !url.includes('tldr.tech')
+  );
+  // drop the characters after ']'
+  urls = urls.map((url) => url.split(']')[0]);
+  // remove duplicates
+  urls = [...new Set(urls)];
+  return urls;
+};
 
 fastify.get('/update-newsletters', async (request, reply) => {
   const auth = await authGmail();
@@ -19,46 +52,45 @@ fastify.get('/update-newsletters', async (request, reply) => {
   }
   const newslettersUrls = unreadNewsletters.map(async (newsletter) => {
     const email = await getEmail(auth, newsletter.id);
+    const body = await getEmailBody(newsletter.id);
+    let urls = getUrlsFromBody(body);
     const listPostHeader = email.payload.headers.find((header) => header.name === 'List-Post');
-    if (!listPostHeader) {
-      return null;
+    if (listPostHeader) {
+      urls = urls.push(listPostHeader.value.replace('<', '').replace('>', ''));
     }
-    const url = listPostHeader.value.replace('<', '').replace('>', '');
-    return { url, id: newsletter.id };
+    return { urls, id: newsletter.id };
   });
   let newsletters = await Promise.all(newslettersUrls);
   newsletters = newsletters.filter((newsletters) => newsletters);
-  const results = [];
   const pocketAccessToken = await readAccessToken();
   newsletters.forEach(async (newsletter) => {
-    const result = await addUrlToPocket(newsletter.url, pocketAccessToken);
-    if (result.Code === '200') {
+    newsletter.urls.forEach(async (url) => {
+      await addUrlToPocket(url, pocketAccessToken);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       await markEmailAsRead(auth, newsletter.id);
-    }
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    results.push(result);
+    });
   });
-  return results;
+  return 'Added newsletters to Pocket';
 });
 
-// fastify.get('/pocket-auth-request', async (request, reply) => {
-//   const res = await getRequestToken();
-//   return res;
-// });
+fastify.get('/pocket-auth-request', async (request, reply) => {
+  const res = await getRequestToken();
+  return res;
+});
 
-// fastify.get('/pocket-auth-access', async (request, reply) => {
-//   const res = await getAccessToken();
-//   return res;
-// });
+fastify.get('/pocket-auth-access', async (request, reply) => {
+  const res = await getAccessToken();
+  return res;
+});
 
 fastify.get('/callback', async (request, reply) => {
   return { Code: 200, Message: 'Token saved' };
 });
 
-// fastify.get('/gmail-auth', async (request, reply) => {
-//   const res = await authGmail();
-//   return res;
-// });
+fastify.get('/gmail-auth', async (request, reply) => {
+  const res = await authGmail();
+  return res;
+});
 
 fastify.get('/healthz', async (request, reply) => {
   return { Code: 200, Message: 'OK' };
