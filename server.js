@@ -73,28 +73,28 @@ fastify.get('/update-newsletters', async (request, reply) => {
   return 'Added newsletters to Pocket';
 });
 
-fastify.get('/pocket-auth-request', async (request, reply) => {
-  const res = await getRequestToken();
-  return res;
-});
-
-fastify.get('/pocket-auth-access', async (request, reply) => {
-  const res = await getAccessToken();
-  return res;
-});
-
 fastify.get('/callback', async (request, reply) => {
   return { Code: 200, Message: 'Token saved' };
-});
-
-fastify.get('/gmail-auth', async (request, reply) => {
-  const res = await authGmail();
-  return res;
 });
 
 fastify.get('/healthz', async (request, reply) => {
   return { Code: 200, Message: 'OK' };
 });
+
+// fastify.get('/pocket-auth-request', async (request, reply) => {
+//   const res = await getRequestToken();
+//   return res;
+// });
+
+// fastify.get('/pocket-auth-access', async (request, reply) => {
+//   const res = await getAccessToken();
+//   return res;
+// });
+
+// fastify.get('/gmail-auth', async (request, reply) => {
+//   const res = await authGmail();
+//   return res;
+// });
 
 const start = async () => {
   dotenv.config();
