@@ -56,7 +56,7 @@ fastify.get('/update-newsletters', async (request, reply) => {
     let urls = getUrlsFromBody(body);
     const listPostHeader = email.payload.headers.find((header) => header.name === 'List-Post');
     if (listPostHeader) {
-      urls = urls.push(listPostHeader.value.replace('<', '').replace('>', ''));
+      urls.push(listPostHeader.value.replace('<', '').replace('>', ''));
     }
     return { urls, id: newsletter.id };
   });
