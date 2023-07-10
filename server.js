@@ -63,13 +63,15 @@ fastify.get('/update-newsletters', async (request, reply) => {
   let newsletters = await Promise.all(newslettersUrls);
   newsletters = newsletters.filter((newsletters) => newsletters);
   const pocketAccessToken = await readAccessToken();
-  newsletters.forEach(async (newsletter) => {
-    newsletter.urls.forEach(async (url) => {
-      await addUrlToPocket(url, pocketAccessToken);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      await markEmailAsRead(auth, newsletter.id);
+  if (newsletters) {
+    newsletters.forEach(async (newsletter) => {
+      newsletter.urls.forEach(async (url) => {
+        await addUrlToPocket(url, pocketAccessToken);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await markEmailAsRead(auth, newsletter.id);
+      });
     });
-  });
+  }
   return 'Added newsletters to Pocket';
 });
 
@@ -81,20 +83,20 @@ fastify.get('/healthz', async (request, reply) => {
   return { Code: 200, Message: 'OK' };
 });
 
-// fastify.get('/pocket-auth-request', async (request, reply) => {
-//   const res = await getRequestToken();
-//   return res;
-// });
+fastify.get('/pocket-auth-request', async (request, reply) => {
+  const res = await getRequestToken();
+  return res;
+});
 
-// fastify.get('/pocket-auth-access', async (request, reply) => {
-//   const res = await getAccessToken();
-//   return res;
-// });
+fastify.get('/pocket-auth-access', async (request, reply) => {
+  const res = await getAccessToken();
+  return res;
+});
 
-// fastify.get('/gmail-auth', async (request, reply) => {
-//   const res = await authGmail();
-//   return res;
-// });
+fastify.get('/gmail-auth', async (request, reply) => {
+  const res = await authGmail();
+  return res;
+});
 
 const start = async () => {
   dotenv.config();
